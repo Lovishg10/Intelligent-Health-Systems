@@ -1,54 +1,54 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-import google.generativeai as genai
+from google import genai
 import os
+from huggingface_hub import InferenceClient
+import requests
 from dotenv import load_dotenv
 
+hf_client = InferenceClient(api_key=os.getenv("HF_TOKEN"))
 # Load the .env file locally
 load_dotenv()
 
 api_key = None
 
-try:
-    if "GEMINI_API_KEY" in st.secrets:
-        api_key = st.secrets["GEMINI_API_KEY"]
-except Exception:
-    # If st.secrets isn't set up (local dev), this catch prevents the crash
-    api_key = os.getenv("GEMINI_API_KEY")
-
-
-if api_key:
-    genai.configure(api_key=api_key)
-else:
-    st.error("API Key not found!")
-
-
-model = genai.GenerativeModel('gemini-1.5-flash')
+import requests
 
 def get_medicine_explanation(med_name):
-    # 1. Clean the input (very important for dictionary/API lookups)
-    query = med_name.strip().lower()
-    
-    # 2. Real-time API Call
+    # --- STEP 1: Try Hugging Face (Save Gemini Quota) ---
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        prompt = f"Explain what {query} is used for in two short, simple sentences for a patient. Do not include dosage."
-        response = model.generate_content(prompt)
+        # Using Llama 3.1 which is very stable on the 2026 router
+        response = hf_client.chat_completion(
+            model="meta-llama/Llama-3.1-8B-Instruct",
+            messages=[{"role": "user", "content": f"Explain {med_name} in 1 sentence."}],
+            max_tokens=50,  # This limits the output length
+            temperature=0.5 # Keeps the answer focused and less 'wordy'
+        )
         
-        if response and response.text:
-            return response.text.strip()
-    except Exception as e:
-        print(f"API Error: {e}") # This shows up in your terminal
+        explanation = response.choices[0].message.content
 
-    # 3. Local Dictionary (The fallback) - Use lowercase keys for matching
-    demo_meds = {
-        "paracetamol": "Used to treat pain and reduce high temperature.",
-        "amoxicillin": "An antibiotic used to treat bacterial infections.",
-        "rolaids": "An antacid used to relieve heartburn and acid indigestion."
-    }
-    
-    return demo_meds.get(query, f"The medication {med_name} is used as prescribed by your doctor for your specific symptoms.")
+        # If the last character isn't a period, trim back to the last period
+        if explanation and not explanation.endswith(('.', '!', '?')):
+            explanation = explanation.rsplit('.', 1)[0] + '.'
+            
+        return explanation
+    except Exception as e:
+        print(f"Hugging Face Error: {e}")
+        return None
+
+    # --- STEP 2: Use Gemini (The Reliable Powerhouse) ---
+    try:
+        response = gemini_client.models.generate_content(
+            model="gemini-2.0-flash", 
+            contents=f"Explain {med_name} in 2 sentences."
+        )
+        return response.text
+    except:
+        return "Please consult your doctor for details."
+
+
+
 # --- SETUP (Mock Database) ---
 if 'appointments' not in st.session_state:
     st.session_state.appointments = []
@@ -207,10 +207,10 @@ elif role == "Patient (View Prescription)":
             
             st.markdown("---") # Visual separator
             
-            st.markdown("#### 💡 What this medicine does:")
-            st.info(record['ai_explanation']) 
             
             st.markdown("#### 👨‍⚕️ Doctor's Instructions:")
-            st.write(record['notes'])
+            st.info(record['notes'])
+            st.markdown("#### 💡 What this medicine does:")
+            st.info(record['ai_explanation']) 
         else:
             st.warning("No completed record found for this Token.")
