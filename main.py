@@ -90,7 +90,7 @@ def get_ai_triage(symptoms):
             pass
 
     # --- PLAN C: OFFLINE FALLBACK (Simulation Mode) ---
-    # If AI fails, we use the old keywords so the app never crashes
+    
     s = symptoms.lower()
     if any(x in s for x in ["heart", "chest", "breath", "pulse"]): return "Cardiology"
     if any(x in s for x in ["brain", "head", "dizzy", "migraine"]): return "Neurology"
@@ -100,56 +100,68 @@ def get_ai_triage(symptoms):
     return "General" # Default
 
 def admin_analytics_dashboard():
+    # --- ADMIN PASSWORD WALL ---
+    if "admin_authenticated" not in st.session_state:
+        st.session_state.admin_authenticated = False
+
+    if not st.session_state.admin_authenticated:
+        st.title("🔐 Admin Access Required")
+        with st.form("admin_login"):
+            user = st.text_input("Admin Username").strip().lower()
+            pwd = st.text_input("Password", type="password").strip()
+            submit = st.form_submit_button("Access Analytics")
+            
+            if submit:
+                if user == "admin" and pwd == "pravega2026":
+                    st.session_state.admin_authenticated = True
+                    st.rerun()
+                else:
+                    st.error("❌ Unauthorized. Admin access only.")
+        return # Stop here if not logged in
+
+    # --- ACTUAL DASHBOARD CONTENT (Only shows if authenticated) ---
     st.title("📊 Hospital Analytics Center")
+    if st.button("Logout from Admin"):
+        st.session_state.admin_authenticated = False
+        st.rerun()
+
     st.markdown("Real-time metrics for hospital administration.")
     
     if not st.session_state.appointments:
         st.info("No data available yet. Wait for patients to register.")
         return
 
-    # 1. KEY METRICS
+    # Metrics
     total_patients = len(st.session_state.appointments)
     waiting = len([p for p in st.session_state.appointments if p['status'] == "Waiting"])
     completed = len([p for p in st.session_state.appointments if p['status'] == "Completed"])
     
-    # Display in 3 big columns
     c1, c2, c3 = st.columns(3)
-    c1.metric("Total Patients", total_patients, "+1 today")
-    c2.metric("In Waiting Room", waiting, delta_color="inverse") # Red if high
-    c3.metric("Patients Treated", completed, delta_color="normal")
+    c1.metric("Total Patients", total_patients)
+    c2.metric("In Waiting Room", waiting)
+    c3.metric("Patients Treated", completed)
     
     st.divider()
-
-    # 2. DEPARTMENT LOAD (Bar Chart)
     st.subheader("👨‍⚕️ Department Load")
-    
-    # Manual count logic (to avoid importing pandas)
     dept_counts = st.session_state.token_counts.copy()
-    # Filter out departments with 0 patients to make chart cleaner
     active_depts = {k: v for k, v in dept_counts.items() if v > 0}
     
     if active_depts:
         st.bar_chart(active_depts)
-    else:
-        st.write("No department activity yet.")
-
-    # 3. RECENT ACTIVITY LOG
+    
     st.subheader("📜 Recent Activity Log")
-    with st.container(border=True):
-        # Show last 5 patients in reverse order
-        for p in st.session_state.appointments[::-1][:5]:
-            status_icon = "✅" if p['status'] == "Completed" else "⏳"
-            st.text(f"{status_icon} {p['id']} - {p['name']} ({p['dept']})")
-
+    for p in st.session_state.appointments[::-1][:5]:
+        status_icon = "✅" if p['status'] == "Completed" else "⏳"
+        st.text(f"{status_icon} {p['id']} - {p['name']} ({p['dept']})")
 
 def get_medicine_explanation(med_name):
     """
-    Robust AI: Google -> Hugging Face -> Simulation Mode (Safety Net)
+     AI: Google -> Hugging Face -> Simulation Mode (Safety Net)
     """
     import requests # Safety import inside function
     
     # --- PLAN A: GOOGLE GEMINI ---
-    # (Try this first because it is smartest)
+    
     if os.getenv("GEMINI_API_KEY"):
         try:
             client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
@@ -163,10 +175,10 @@ def get_medicine_explanation(med_name):
             print("Gemini failed, switching to backup...")
 
     # --- PLAN B: HUGGING FACE (Official Client) ---
-    # (Try this if Google fails)
+
     if os.getenv("HF_TOKEN"):
         try:
-            # We use the library instead of raw URL to avoid 404/410 errors
+            #Using the library instead of raw URL to avoid 404/410 errors
             hf = InferenceClient(api_key=os.getenv("HF_TOKEN"))
             response = hf.chat_completion(
                 model="meta-llama/Llama-3.1-8B-Instruct",
@@ -184,7 +196,6 @@ def get_medicine_explanation(med_name):
         "ibuprofen": "Ibuprofen is an anti-inflammatory drug used for pain relief and fever."
     }
     
-    # Check if we have a canned response, otherwise give a safe default
     med_lower = med_name.lower().strip()
     for key in generic_responses:
         if key in med_lower:
@@ -288,7 +299,7 @@ def show_patient_intake():
         with st.spinner("🤖 AI Nurse is assigning a department..."):
             dept = get_ai_triage(symptoms)
             
-            # Fun UI touch: Show which AI logic was used
+            
             time.sleep(0.5) # Fake delay so user sees the spinner
 
         # 4. GENERATE TOKEN
@@ -310,19 +321,19 @@ def show_patient_intake():
             "prescription": None
         })
         
-        st.balloons() # Added a nice visual effect for success!
+        st.balloons() 
         st.success(f"✅ Registered! Your Token: **{token_str}**")
         st.info(f"Please wait in the **{dept}** Department.")
 
 
 
 def doctor_login():
-    """Renders the Login Page with Robust Error Handling"""
+    
     st.title("👨‍⚕️ Staff Login")
     
     # Credentials Database
     USERS = {
-        "admin": {"pass": "pravega2026", "dept": "General"},
+        "dr_gen": {"pass": "gen1", "dept": "General"},
         "dr_heart": {"pass": "cardio1", "dept": "Cardiology"},
         "dr_brain": {"pass": "neuro1", "dept": "Neurology"},
         "dr_ortho": {"pass": "ortho1", "dept": "Orthopedic"},
@@ -345,7 +356,8 @@ def doctor_login():
                 st.rerun()
             else:
                 st.error("❌ Invalid Credentials")
-                st.warning(f"Make sure you are using: admin / pravega2026")
+                st.warning(f"Make sure you are using: dr_gen / gen1")
+                
 # --- MAIN APP NAVIGATION ---
 
 # Sidebar Logic
@@ -360,6 +372,7 @@ with st.sidebar:
         if st.button("Logout"):
             st.session_state.doctor_logged_in = False
             st.rerun()
+
 
 # Page Routing
 if role == "Patient (Check-in)" or (st.session_state.doctor_logged_in and role == "Patient View"):
