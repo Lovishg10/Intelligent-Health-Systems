@@ -17,7 +17,7 @@ To assist doctors in high-pressure environments, the system includes a dedicated
 
 ## 🏗️ Technical Resilience: 3-Layer Failover
 The system is built to stay online even if the primary cloud service fails, using a hierarchical logic:
-1. **Primary**: Google Gemini 1.5 Flash for fast, intelligent reasoning.
+1. **Primary**: Google Gemini 2.0 Flash for fast, intelligent reasoning.
 2. **Secondary**: Llama 3.1 (via local inference) if the internet/API is unstable.
 3. **Tertiary**: A local Rule Engine to ensure basic dashboard functionality and data entry never stop.
 
