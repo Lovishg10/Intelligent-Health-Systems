@@ -39,6 +39,7 @@ The system is built to stay online even if the primary cloud service fails, usin
 ### 1. Clone the Repository
 ```
 git clone https://github.com/Lovishg10/Intelligent-Health-Systems.git
+cd Intelligent-Health-Systems
 ```
 
 ### 2. Install Dependencies
@@ -58,6 +59,18 @@ In the CLI , enter command
 ```
 streamlit run main.py
 ```
+
+### 5. ID's and Passwords for Doctros and Admin
+
+| Doctor | ID | Password |
+|---|---|---|
+| Admin| admin | pravega2026 |
+| Cardiologist | dr_cardio | cardio1 |
+| General | dr_gen | gen1 |
+| Neurologist | dr_neuro | neuro1 |
+| Orthologist | dr_ortho | ortho1 |
+| Dentist | dr_oral | oral1 |
+
 ---
 
 > "Scalable. Reliable. Life-Saving."
