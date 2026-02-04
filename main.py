@@ -182,7 +182,7 @@ def get_medicine_explanation(med_name):
             hf = InferenceClient(api_key=os.getenv("HF_TOKEN"))
             response = hf.chat_completion(
                 model="meta-llama/Llama-3.1-8B-Instruct",
-                messages=[{"role": "user", "content": f"Explain {med_name} in 2 short sentences."}],
+                messages=[{"role": "user", "content": f"For doctor , who want to confirm , write some Precautions for {med_name} in max 2-3 lines. Donot write consult a doctor, as its being studied by a doctor."}],
                 max_tokens=100
             )
             return f"🤖 (Llama) {response.choices[0].message.content.strip()}"
@@ -261,7 +261,7 @@ def show_patient_intake():
     
     col1, col2 = st.columns(2)
     with col1:
-        name = st.text_input("Full Name", placeholder="e.g. John Doe")
+        name = st.text_input("Full Name", placeholder="e.g. Lovish Garg")
         age = st.number_input("Age", 0, 120, 25)
         gender = st.selectbox("Gender", ["Select", "Male", "Female", "Other"])
     with col2:
@@ -334,8 +334,8 @@ def doctor_login():
     # Credentials Database
     USERS = {
         "dr_gen": {"pass": "gen1", "dept": "General"},
-        "dr_heart": {"pass": "cardio1", "dept": "Cardiology"},
-        "dr_brain": {"pass": "neuro1", "dept": "Neurology"},
+        "dr_cardio": {"pass": "cardio1", "dept": "Cardiology"},
+        "dr_neuro": {"pass": "neuro1", "dept": "Neurology"},
         "dr_ortho": {"pass": "ortho1", "dept": "Orthopedic"},
         "dr_oral": {"pass": "oral1", "dept": "Oral-Health"}
     }
@@ -428,7 +428,7 @@ elif role == "Doctor Dashboard" and st.session_state.doctor_logged_in:
                     b1, b2 = st.columns([1, 4])
                     
                     # Generate AI Explanation
-                    if b1.button("✨ AI Assist", key=f"ai_{p['id']}"):
+                    if b1.button("⚠️ Risks", key=f"ai_{p['id']}"):
                         if med_name:
                             with st.spinner("Consulting AI..."):
                                 explanation = get_medicine_explanation(med_name)
