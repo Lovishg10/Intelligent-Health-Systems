@@ -34,5 +34,31 @@ The system is built to stay online even if the primary cloud service fails, usin
 * **Architecture**: 3-Layer Failover Logic
 
 ---
+## ⚙️ Installation & Setup
+
+### 1. Clone the Repository
+```
+git clone https://github.com/Lovishg10/Intelligent-Health-Systems.git
+```
+
+### 2. Install Dependencies
+```
+pip install -r requirements.txt
+```
+
+### 3. API Configurations
+The system requires two API keys to handle the Dual-Model Failover logic. Create a .env file in the same directory as main.py and add your API keys:
+
+```
+GOOGLE_API_KEY=your_gemini_api_key_here
+HUGGINGFACE_API_KEY=your_huggingface_api_key_here
+```
+### 4. Running the Program
+In the CLI , enter command
+```
+streamlit run main.py
+```
+---
 
 > "Scalable. Reliable. Life-Saving."
+
